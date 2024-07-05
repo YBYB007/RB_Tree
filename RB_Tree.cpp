@@ -26,14 +26,13 @@ bool RB_Tree<DataType>::insert(DataType data)
     else
     {
         std::weak_ptr<RB_Node<DataType>> node = root;
-        if (node.lock()->data == data)
-        {
-            return false;
-        }
-
         for (;;)
         {
-            if (node.lock()->data > data)
+            if (node.lock()->data == data)
+            {
+                return false;
+            }
+            else if (node.lock()->data > data)
             {
                 if (node.lock()->left)
                 {
@@ -59,7 +58,7 @@ bool RB_Tree<DataType>::insert(DataType data)
                     node.lock()->right = std::make_shared<RB_Node<DataType>>(data);
                     node.lock()->right->parent = node.lock();
                     // 插入后进行红色修正
-                    // red_fix(node)
+                    // red_fix(node);
                     break;
                 }
             }
@@ -71,6 +70,7 @@ bool RB_Tree<DataType>::insert(DataType data)
 template <class DataType>
 void RB_Tree<DataType>::red_fix(std::weak_ptr<RB_Node<DataType>> node)
 {
+    std::cout << "修正好了" << std::endl;
 }
 
 // 删除
@@ -81,21 +81,69 @@ bool RB_Tree<DataType>::remove(DataType data)
     {
         return false;
     }
-    else{
+    else
+    {
         std::weak_ptr<RB_Node<DataType>> node = root;
-        if (node.lock()->data == data)
+        Pos pos = tree_root;
+        for (;;)
         {
-            
-            return false;
+            if (node.lock()->data == data)
+            {
+                // 黑色修正
+                black_fix(node, pos);
+                break;
+            }
+            else if (node.lock()->data > data)
+            {
+                if (!node.lock()->left)
+                {
+                    return false;
+                }
+                else
+                {
+                    node = node.lock()->left;
+                    pos = left;
+                }
+            }
+            else if (node.lock()->data < data)
+            {
+                if (!node.lock()->right)
+                {
+                    return false;
+                }
+                else
+                {
+                    node = node.lock()->right;
+                    pos = right;
+                }
+            }
         }
-
     }
     return true;
 }
+
 // 黑色修正
 template <class DataType>
-void RB_Tree<DataType>::black_fix(std::weak_ptr<RB_Node<DataType>> node)
+void RB_Tree<DataType>::black_fix(std::weak_ptr<RB_Node<DataType>> node, Pos pos)
 {
+    remove_node(node, pos);
+}
+// 删除节点
+template <class DataType>
+void RB_Tree<DataType>::remove_node(std::weak_ptr<RB_Node<DataType>> node, Pos pos)
+{
+    if (pos == tree_root)
+    {
+        root.reset();
+    }
+    else if (pos == left)
+    {
+        node.lock()->parent.lock()->left.reset();
+    }
+    else if (pos == right)
+    {
+        node.lock()->parent.lock()->right.reset();
+    }
 }
 
 // 输出红黑树

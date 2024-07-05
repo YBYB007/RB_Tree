@@ -13,4 +13,15 @@ void test1(){
     T1.insert(1234);
     T1.insert(123);    
     T1.print_tree_pre();
+    std::cout<<"yes"<<std::endl;
+     
+    T1.remove(13);
+    T1.print_tree_pre();
+    std::cout<<"yes2"<<std::endl;
+    T1.insert(1234);
+    T1.print_tree_pre();
+    std::cout<<"yes1"<<std::endl;
+    T1.insert(12);
+    T1.print_tree_pre();
+    std::cout<<"yes"<<std::endl;
 }
