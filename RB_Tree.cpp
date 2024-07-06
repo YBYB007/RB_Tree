@@ -75,11 +75,12 @@ void RB_Tree<DataType>::left_rotation(std::weak_ptr<RB_Node<DataType>> node)
         }
     }
 }
+
 // 右旋
 template <class DataType>
 void RB_Tree<DataType>::right_rotation(std::weak_ptr<RB_Node<DataType>> node)
 {
-   std::weak_ptr<RB_Node<DataType>> left_node = node.lock()->left;
+    std::weak_ptr<RB_Node<DataType>> left_node = node.lock()->left;
     // 根节点
     bool root_node = false;
     if (node.lock() == this->root)
@@ -226,6 +227,7 @@ void RB_Tree<DataType>::red_fix(std::weak_ptr<RB_Node<DataType>> node, Pos pos)
             grand_parent.lock()->color = RED;
             grand_parent.lock()->left->color = BLACK;
             grand_parent.lock()->right->color = BLACK;
+            // 切换到祖父节点
             node = grand_parent.lock();
             // 如果切换到根节点，那么直接染黑就行了，结束调整，这是树增高的唯一方法。
             if (node.lock()->parent.expired())
@@ -334,21 +336,170 @@ template <class DataType>
 void RB_Tree<DataType>::black_fix(std::weak_ptr<RB_Node<DataType>> node, Pos pos)
 {
 
-    // 1. 删除的是叶子节点，直接删除就可以了。如果删除的红节点，结束。如果删除的是黑节点，这是最为复杂的一种情况，因为这条路上已经没有可以补充的黑节点，需要改变其他路的黑节点数量。将这个节点变为双黑节点，最后将其调整为单黑节点。
-    //    1. 如果它的兄弟是黑色
-    //       1. 如果它左孩子是红色，让孩子结点染成父节点的颜色，父节点染成祖父节点的颜色，LL旋转调节，双黑恢复为单黑，就调整好了（RR类似）。
-    //       2. 如果它的右孩子是红色，那么直接将其染成祖父的颜色，祖父变黑，然后LR旋转，需要先旋转祖父节点的左孩子，然后再旋转祖父节点，就调整好了（RL类似）。
-    //    2. 如果兄弟的孩子都是黑色或者没有孩子， 直接将兄弟染红，然后恢复更大的树，将双黑结点上移为父节点，调整父节点。
-    //       1. 如果父节点是红色，那么直接变为黑色就修复好了。
-    //       2. 如果父节点是黑色，那么还需要继续看他的兄弟节点。
-    //       3. 如果是根结点，并不会破坏黑路同性质，就调整好了。
-    //    3. 如果它的兄弟是红色，直接将兄弟和父节点颜色交换，然后继续看他的兄弟节点。
-    // 2. 如果只有左孩子或者右孩子，直接代替即可。颜色修正，这种情况只能是一黑一红，不可能是其他情况，也就是说红色节点不可能只有左子树或者右子树，不然就违反了红黑树的性质。删除这个黑结点，让孩子替换过来，这时候这条路径会少一个黑节点，将代替过来的红结点染黑就可以了。
-    // 3. 如果都有，那么就它的直接前驱或者直接后继替换它，然后继续判断直接前驱或后继，最终转化为1或2的情况。
-    remove_node(node, pos);
+    if (!node.lock()->left && !node.lock()->right)
+    {
+        if (node.lock() == this->root)
+        {
+            this->root.reset();
+        }
+        // 删除红色叶子节点，直接删除就好了。
+        else if (node.lock()->color == RED)
+        {
+            remove_node(node, pos);
+        }
+        // 删除黑色叶子节点，这个是最复杂的,因为这条路已经没有可以补充为黑色节点的节点了，只能从兄弟那里找了。
+        else if (node.lock()->color == BLACK)
+        {
+            black_leaf_fix(node, pos);
+            remove_node(node, pos);
+        }
+    }
+    else if (node.lock()->left && !node.lock()->right)
+    {
+        // 只有一个子树的时候，只能是末尾一红一黑的情况，将黑色删除，红色拿上来变色就好了。
+        node.lock()->data = node.lock()->left->data;
+        pos = left;
+        remove_node(node.lock()->left, pos);
+    }
+    else if (!node.lock()->left && node.lock()->right)
+    {
+        // 只有一个子树的时候，只能是末尾一红一黑的情况，将黑色删除，红色拿上来变色就好了。
+        node.lock()->data = node.lock()->right->data;
+        pos = right;
+        remove_node(node.lock()->right, pos);
+    }
+
+    else if (node.lock()->left && node.lock()->right)
+    {
+        // 有两个子树的时候，需要与直接前驱或直接后继交换数据，然后将问题转移到删除直接前驱或直接后继（这里用直接后继），然后转化为1、2的情况。
+        std::weak_ptr<RB_Node<DataType>> successor_node = node.lock()->right;
+        pos = right;
+        while (successor_node.lock()->left)
+        {
+            successor_node = successor_node.lock()->left;
+            pos = left;
+        }
+        DataType temp = node.lock()->data;
+        node.lock()->data = successor_node.lock()->data;
+        successor_node.lock()->data = temp;
+        black_fix(successor_node, pos);
+    }
 }
 
-// 删除节点
+// 黑色叶子修正
+template <class DataType>
+void RB_Tree<DataType>::black_leaf_fix(std::weak_ptr<RB_Node<DataType>> node, Pos pos)
+{
+    // 黑色的叶子节点一定是有兄弟节点的
+    if (pos == left)
+    {
+        std::weak_ptr<RB_Node<DataType>> parent = node.lock()->parent.lock();
+        std::weak_ptr<RB_Node<DataType>> right_node = parent.lock()->right;
+        if (right_node.lock()->color == RED)
+        {
+            // 变色，旋转，继续递归
+            Color temp = parent.lock()->color;
+            parent.lock()->color = right_node.lock()->color;
+            right_node.lock()->color = temp;
+            left_rotation(parent);
+            black_leaf_fix(node, pos);
+        }
+        else if (right_node.lock()->color == BLACK)
+        {
+            if (right_node.lock()->right && right_node.lock()->right->color == RED)
+            {
+                // 变色 RR
+                right_node.lock()->right->color = right_node.lock()->color;
+                right_node.lock()->color = parent.lock()->color;
+                parent.lock()->color = BLACK;
+                left_rotation(parent);
+            }
+            else if (right_node.lock()->left && right_node.lock()->left->color == RED)
+            {
+                // 变色 RL
+                right_node.lock()->left->color = parent.lock()->color;
+                parent.lock()->color = BLACK;
+                right_rotation(right_node);
+                left_rotation(parent);
+            }
+            else
+            {
+                // 都是黑的
+                right_node.lock()->color = RED;
+                if (parent.lock()->color == RED)
+                {
+                    parent.lock()->color = BLACK;
+                }
+                else if (parent.lock() != this->root)
+                {
+                    if (parent.lock()->parent.lock()->left && parent.lock()->parent.lock()->left == parent.lock())
+                    {
+                        black_leaf_fix(parent, left);
+                    }
+                    else
+                    {
+                        black_leaf_fix(parent, right);
+                    }
+                }
+            }
+        }
+    }
+    else if (pos == right)
+    {
+        std::weak_ptr<RB_Node<DataType>> parent = node.lock()->parent.lock();
+        std::weak_ptr<RB_Node<DataType>> left_node = parent.lock()->left;
+        if (left_node.lock()->color == RED)
+        {
+            // 变色，旋转，继续递归
+            Color temp = parent.lock()->color;
+            parent.lock()->color = left_node.lock()->color;
+            left_node.lock()->color = temp;
+            right_rotation(parent);
+            black_leaf_fix(node, pos);
+        }
+        else if (left_node.lock()->color == BLACK)
+        {
+            if (left_node.lock()->left && left_node.lock()->left->color == RED)
+            {
+                // 变色 LL
+                left_node.lock()->left->color = left_node.lock()->color;
+                left_node.lock()->color = parent.lock()->color;
+                parent.lock()->color = BLACK;
+                right_rotation(parent);
+            }
+            else if (left_node.lock()->right && left_node.lock()->right->color == RED)
+            {
+                // 变色 LR
+                left_node.lock()->right->color = parent.lock()->color;
+                parent.lock()->color = BLACK;
+                left_rotation(left_node);
+                right_rotation(parent);
+            }
+            else
+            {
+                // 都是黑的
+                left_node.lock()->color = RED;
+                if (parent.lock()->color == RED)
+                {
+                    parent.lock()->color = BLACK;
+                }
+                else if (parent.lock() != this->root)
+                {
+                    if (parent.lock()->parent.lock()->left && parent.lock()->parent.lock()->left == parent.lock())
+                    {
+                        black_leaf_fix(parent, left);
+                    }
+                    else
+                    {
+                        black_leaf_fix(parent, right);
+                    }
+                }
+            }
+        }
+    }
+}
+
+// 删除叶子节点
 template <class DataType>
 void RB_Tree<DataType>::remove_node(std::weak_ptr<RB_Node<DataType>> node, Pos pos)
 {

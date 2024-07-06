@@ -25,7 +25,7 @@ public:
 
 private:
     // 打印完整的树
-    void print_tree(std::weak_ptr<RB_Node<DataType>> node, int depth = 0, Pos pos=tree_root);
+    void print_tree(std::weak_ptr<RB_Node<DataType>> node, int depth = 0, Pos pos = tree_root);
     // 左旋
     void left_rotation(std::weak_ptr<RB_Node<DataType>> node);
     // 右旋
@@ -34,6 +34,8 @@ private:
     void red_fix(std::weak_ptr<RB_Node<DataType>> node, Pos pos);
     // 黑色修正
     void black_fix(std::weak_ptr<RB_Node<DataType>> node, Pos pos);
+    // 黑叶的黑色修正
+    void black_leaf_fix(std::weak_ptr<RB_Node<DataType>> node, Pos pos);
     // 删除节点
     void remove_node(std::weak_ptr<RB_Node<DataType>> node, Pos pos);
 };
