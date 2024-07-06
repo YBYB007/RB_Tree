@@ -3,6 +3,6 @@
 int main(int argc, char const *argv[])
 {
     /* code */
-    test1();
+    red_test();
     return 0;
 }

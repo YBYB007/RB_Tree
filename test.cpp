@@ -1,27 +1,44 @@
 #include "iostream"
 #include "RB_Tree.cpp"
-void test1(){
-    RB_Tree<int> T1(123);
+void red_test(){
+    RB_Tree<int> T1;
     if(T1.root==nullptr){
-         std::cout<<"yes"<<std::endl;
+         std::cout<<"empty"<<std::endl;
      }
      else{
          std::cout<<T1.root->data<<" "<<T1.root->color<<std::endl;
     }
-    T1.insert(12);
-    T1.insert(13);
-    T1.insert(1234);
-    T1.insert(123);    
+    T1.insert(17);
     T1.print_tree_pre();
-    std::cout<<"yes"<<std::endl;
-     
-    T1.remove(13);
+    std::cout<<"----------------------------------------------------------------------"<<std::endl;
+    T1.insert(18); 
+    T1.print_tree_pre(); 
+    std::cout<<"----------------------------------------------------------------------"<<std::endl;
+    T1.insert(23);
     T1.print_tree_pre();
-    std::cout<<"yes2"<<std::endl;
-    T1.insert(1234);
+    std::cout<<"----------------------------------------------------------------------"<<std::endl;
+    T1.insert(34);
     T1.print_tree_pre();
-    std::cout<<"yes1"<<std::endl;
-    T1.insert(12);
+    std::cout<<"----------------------------------------------------------------------"<<std::endl;
+    T1.insert(27);
     T1.print_tree_pre();
-    std::cout<<"yes"<<std::endl;
+    std::cout<<"----------------------------------------------------------------------"<<std::endl;
+    T1.insert(15);
+    T1.print_tree_pre();
+    std::cout<<"----------------------------------------------------------------------"<<std::endl;
+    T1.insert(9);
+    T1.print_tree_pre();
+    std::cout<<"----------------------------------------------------------------------"<<std::endl;
+    T1.insert(6);
+    T1.print_tree_pre();
+    std::cout<<"----------------------------------------------------------------------"<<std::endl;
+    T1.insert(8);
+    T1.print_tree_pre();
+    std::cout<<"----------------------------------------------------------------------"<<std::endl;
+    T1.insert(5);
+    T1.print_tree_pre();
+    std::cout<<"----------------------------------------------------------------------"<<std::endl;
+    T1.insert(25);   
+    T1.print_tree_pre(); 
+    std::cout<<"----------------------------------------------------------------------"<<std::endl;
 }
